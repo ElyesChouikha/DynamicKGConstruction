@@ -131,12 +131,12 @@ def _patch_itext2kg_provider_detection():
             model = getattr(self, "model", None)
             embeddings_model = getattr(self, "embeddings_model", None)
 
-            # Route Ollama to ANTHROPIC provider type — no rate limiting,
+            # Route Ollama to CLAUDE provider type — no rate limiting,
             # no API key check, high batch size
             if ChatOllama and isinstance(model, ChatOllama):
-                return ProviderType.ANTHROPIC
+                return ProviderType.CLAUDE        # ← change ANTHROPIC to CLAUDE
             if OllamaEmbeddings and isinstance(embeddings_model, OllamaEmbeddings):
-                return ProviderType.ANTHROPIC
+                return ProviderType.CLAUDE        # ← change ANTHROPIC to CLAUDE
 
             return original_detect_provider(self)
 
