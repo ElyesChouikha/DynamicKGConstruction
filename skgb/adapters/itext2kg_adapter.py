@@ -131,10 +131,12 @@ def _patch_itext2kg_provider_detection():
             model = getattr(self, "model", None)
             embeddings_model = getattr(self, "embeddings_model", None)
 
+            # Route Ollama to ANTHROPIC provider type — no rate limiting,
+            # no API key check, high batch size
             if ChatOllama and isinstance(model, ChatOllama):
-                return ProviderType.UNKNOWN
+                return ProviderType.ANTHROPIC
             if OllamaEmbeddings and isinstance(embeddings_model, OllamaEmbeddings):
-                return ProviderType.UNKNOWN
+                return ProviderType.ANTHROPIC
 
             return original_detect_provider(self)
 
@@ -151,10 +153,10 @@ def _patch_itext2kg_for_empty_results():
     """Patch itext2kg to handle empty atomic KG lists gracefully.
 
     Patches three methods on the Atom class:
-    1. parallel_atomic_merge  – handles empty KG lists (``current[0]`` bug)
-    2. build_atomic_kg_from_quintuples – catches IndexError from entity
+    1. parallel_atomic_merge  - handles empty KG lists (``current[0]`` bug)
+    2. build_atomic_kg_from_quintuples - catches IndexError from entity
        look-ups / embedding failures and returns an empty KG instead
-    3. build_graph – uses ``return_exceptions=True`` in asyncio.gather so
+    3. build_graph - uses ``return_exceptions=True`` in asyncio.gather so
        that one bad quintuple doesn't kill the whole batch, and tolerates
        an all-empty atomic-KG list gracefully
     """
@@ -190,7 +192,7 @@ def _patch_itext2kg_for_empty_results():
         @functools.wraps(original_build_atomic)
         async def safe_build_atomic_kg_from_quintuples(self, relationships, *args, **kwargs):
             if not relationships:
-                logger.debug("Empty relationships list for quintuple – returning empty KG.")
+                logger.debug("Empty relationships list for quintuple - returning empty KG.")
                 return KnowledgeGraph()
             try:
                 return await original_build_atomic(self, relationships, *args, **kwargs)
@@ -223,7 +225,7 @@ def _patch_itext2kg_for_empty_results():
         atom_module.Atom.build_graph = safe_build_graph
 
         logger.info("Applied itext2kg patches (parallel_atomic_merge, "
-                     "build_atomic_kg_from_quintuples, build_graph)")
+                    "build_atomic_kg_from_quintuples, build_graph)")
         return True
 
     except Exception as e:
