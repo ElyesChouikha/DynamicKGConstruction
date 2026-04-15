@@ -1,35 +1,35 @@
 # DynamicKGConstruction - Requirements
 # Python 3.10+ required
-
 # =============================================================================
 # FastAPI & Server
 # =============================================================================
 fastapi>=0.109.0
 uvicorn[standard]>=0.27.0
 python-multipart>=0.0.6
-
 # =============================================================================
 # Data Validation
 # =============================================================================
 pydantic>=2.0.0
-
+# =============================================================================
+# Numerical Computing - Pinned for itext2kg compatibility
+# =============================================================================
+numpy>=1.24.0,<2.0.0
+scipy>=1.10.0
+scikit-learn>=1.0.0
 # =============================================================================
 # Core Dependencies - Document Processing (Docling)
 # =============================================================================
 docling>=2.0.0
 docling-core>=2.0.0
-
 # =============================================================================
 # Core Dependencies - Knowledge Graph Construction (iText2KG)
 # =============================================================================
 # NOTE: itext2kg currently depends on langchain<0.4.
 # Keep langchain/langchain-core pinned accordingly.
 itext2kg==1.0.0
-
 # itext2kg compatibility pins (see notebook dependency conflict notes)
 langchain>=0.3.26,<0.4.0
 langchain-core>=0.3.69,<0.4.0
-
 # =============================================================================
 # LLM Providers - Install based on your needs
 # =============================================================================
@@ -37,38 +37,29 @@ langchain-core>=0.3.69,<0.4.0
 # Pin langchain-ollama to a pre-1.0 release to stay compatible with
 # langchain-core<0.4 (itext2kg requirement).
 langchain-ollama>=0.1.0,<1.0.0
-
 # =============================================================================
 # SKGB - Neo4j (optional, direct Bolt driver; CSV+Cypher export does not require it)
 # =============================================================================
 neo4j>=5.0.0,<6.0.0
-
-
 # OpenAI API (optional)
 langchain-openai>=0.2.14,<0.3.0
-
 # Anthropic/Claude API (required for claude-* models)
 langchain-anthropic>=0.1.0
-
 # =============================================================================
 # Data Processing & Graph Libraries
 # =============================================================================
 networkx>=3.0
 pandas>=2.0.0
 pyvis>=0.3.0
-
 # =============================================================================
 # Async Support
 # =============================================================================
 nest-asyncio>=1.5.0
-
 # =============================================================================
 # Optional Dependencies
 # =============================================================================
 # Uncomment as needed:
-
 # For OCR support:
 # pip install docling[ocr]
-
 # For audio transcription:
 # pip install docling[audio]
