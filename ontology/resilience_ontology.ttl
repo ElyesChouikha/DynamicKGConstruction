@@ -1,0 +1,165 @@
+@prefix : <http://example.org/supply-chain-resilience#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# ---------------------------------------------------------
+# Ontology Declaration
+# ---------------------------------------------------------
+<http://example.org/supply-chain-resilience> rdf:type owl:Ontology ;
+    rdfs:comment "An ontology for Resilient Supply Chains (Thesis Project)." .
+
+# ---------------------------------------------------------
+# 1. Classes (Nodes from Mermaid)
+# ---------------------------------------------------------
+:Supplier a owl:Class .
+:Facility a owl:Class .
+:Product a owl:Class .
+:Location a owl:Class .
+:RiskEvent a owl:Class .
+:Certification a owl:Class .
+
+# ---------------------------------------------------------
+# 2. Object Properties (Relationships between Nodes)
+# ---------------------------------------------------------
+
+# Supplier ||--|{ Facility : OWNS
+:owns a owl:ObjectProperty ;
+    rdfs:domain :Supplier ;
+    rdfs:range :Facility .
+
+# Facility }|--|| Location : LOCATED_IN
+:locatedIn a owl:ObjectProperty ;
+    rdfs:domain :Facility ;
+    rdfs:range :Location .
+
+# Facility }|--|{ Product : MANUFACTURES
+:manufactures a owl:ObjectProperty ;
+    rdfs:domain :Facility ;
+    rdfs:range :Product .
+
+# Supplier }|--o{ Supplier : PARTNERS_WITH
+:partnersWith a owl:ObjectProperty ;
+    rdfs:domain :Supplier ;
+    rdfs:range :Supplier ;
+    rdf:type owl:SymmetricProperty . # implied: if A partners with B, B partners with A
+
+# Supplier }|--|{ Certification : HOLDS
+:holdsCertification a owl:ObjectProperty ;
+    rdfs:domain :Supplier ;
+    rdfs:range :Certification .
+
+# RiskEvent }o--|{ Location : AFFECTS
+:affects a owl:ObjectProperty ;
+    rdfs:domain :RiskEvent ;
+    rdfs:range :Location .
+
+# RiskEvent }o--|{ Facility : DISRUPTS
+:disrupts a owl:ObjectProperty ;
+    rdfs:domain :RiskEvent ;
+    rdfs:range :Facility .
+
+# ---------------------------------------------------------
+# 3. Data Properties (Attributes inside Nodes)
+# ---------------------------------------------------------
+
+# --- Supplier Attributes ---
+:tierLevel a owl:DatatypeProperty ;
+    rdfs:domain :Supplier ;
+    rdfs:range xsd:string .
+
+:riskIndex a owl:DatatypeProperty ;
+    rdfs:domain :Supplier ;
+    rdfs:range xsd:float .
+
+:collaborationLevel a owl:DatatypeProperty ;
+    rdfs:domain :Supplier ;
+    rdfs:range xsd:string .
+
+:sharesData a owl:DatatypeProperty ;
+    rdfs:domain :Supplier ;
+    rdfs:range xsd:boolean .
+
+# --- Facility Attributes ---
+:timeToRecover a owl:DatatypeProperty ;
+    rdfs:domain :Facility ;
+    rdfs:range xsd:integer . # Measured in days
+
+:timeToSurvive a owl:DatatypeProperty ;
+    rdfs:domain :Facility ;
+    rdfs:range xsd:integer . # Measured in days
+
+:digitalizationLevel a owl:DatatypeProperty ;
+    rdfs:domain :Facility ;
+    rdfs:range xsd:string .
+
+:adaptabilityIndex a owl:DatatypeProperty ;
+    rdfs:domain :Facility ;
+    rdfs:range xsd:boolean .
+
+:inventoryVelocity a owl:DatatypeProperty ;
+    rdfs:domain :Facility ;
+    rdfs:range xsd:float .
+
+# --- Product Attributes ---
+:leadTime a owl:DatatypeProperty ;
+    rdfs:domain :Product ;
+    rdfs:range xsd:float .
+
+:onTimeDeliveryRate a owl:DatatypeProperty ;
+    rdfs:domain :Product ;
+    rdfs:range xsd:float .
+
+:isDualSourced a owl:DatatypeProperty ;
+    rdfs:domain :Product ;
+    rdfs:range xsd:boolean .
+
+# --- RiskEvent Attributes ---
+:revenueImpact a owl:DatatypeProperty ;
+    rdfs:domain :RiskEvent ;
+    rdfs:range xsd:float .
+
+:timeToAwareness a owl:DatatypeProperty ;
+    rdfs:domain :RiskEvent ;
+    rdfs:range xsd:integer .
+
+:timeToAction a owl:DatatypeProperty ;
+    rdfs:domain :RiskEvent ;
+    rdfs:range xsd:integer .
+
+# --- Location Attributes ---
+:countryName a owl:DatatypeProperty ;
+    rdfs:domain :Location ;
+    rdfs:range xsd:string .
+
+:regionName a owl:DatatypeProperty ;
+    rdfs:domain :Location ;
+    rdfs:range xsd:string .
+
+# --- Certification Attributes ---
+:certificationName a owl:DatatypeProperty ;
+    rdfs:domain :Certification ;
+    rdfs:range xsd:string .
+
+:issueDate a owl:DatatypeProperty ;
+    rdfs:domain :Certification ;
+    rdfs:range xsd:date .
+
+# ---------------------------------------------------------
+# BAD DATA FOR TESTING SHACL VALIDATION
+# ---------------------------------------------------------
+
+# VIOLATION 1: The "Ghost Factory"
+# This is a Facility, but we intentionally didn't give it a :locatedIn property.
+:GhostFactory a :Facility ;
+    :timeToRecover 10 .
+
+# VIOLATION 2: The "Impossible TTR"
+# This Facility has a location (so that passes), but TTR is negative.
+:TimeTravelFactory a :Facility ;
+    :locatedIn :Vietnam ;
+    :timeToRecover -5 .
+
+# We need to define :Vietnam as a Location so the second factory doesn't fail on that too
+:Vietnam a :Location .

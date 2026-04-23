@@ -1,0 +1,50 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix : <http://example.org/supply-chain-resilience#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# ---------------------------------------------------------
+# Shape 1: Facility Validation
+# Rule: A Facility MUST have exactly ONE Location (1:1)
+# ---------------------------------------------------------
+
+:FacilityShape a sh:NodeShape ;
+    sh:targetClass :Facility ;  # This shape applies to all :Facility nodes
+    sh:property [
+        sh:path :locatedIn ;    # Check the :locatedIn property
+        sh:minCount 1 ;         # Must have at least 1
+        sh:maxCount 1 ;         # Must have at most 1 (enforces 1:1)
+        sh:message "Error: Every Facility must be located in exactly one Location." ;
+    ] ;
+    
+    # Rule: Time To Recover must be a positive integer
+    sh:property [
+        sh:path :timeToRecover ;
+        sh:datatype xsd:integer ;
+        sh:minInclusive 0 ;
+        sh:message "Error: Time To Recover must be a positive number of days." ;
+    ] .
+
+# ---------------------------------------------------------
+# Shape 2: Supplier Validation
+# Rule: A Supplier MUST own at least ONE Facility (1:n)
+# ---------------------------------------------------------
+:SupplierShape a sh:NodeShape ;
+    sh:targetClass :Supplier ;
+    sh:property [
+        sh:path :owns ;
+        sh:minCount 1 ;         # Enforces 1..N (Must own at least one)
+        sh:message "Error: A Supplier must own at least one Facility." ;
+    ] .
+
+# ---------------------------------------------------------
+# Shape 3: Risk Event Validation (The "Missing Metric" Rule)
+# Rule: Every RiskEvent SHOULD have a severity or impact score.
+# ---------------------------------------------------------
+:RiskEventShape a sh:NodeShape ;
+    sh:targetClass :RiskEvent ;
+    sh:property [
+        sh:path :revenueImpact ;   # Or use :severity if you add that property
+        sh:minCount 1 ;            # Must have at least one impact score
+        sh:message "Warning: A Risk Event was logged without a Revenue Impact score." ;
+        sh:severity sh:Warning ;   # This marks it as a "Warning" rather than a hard "Error"
+    ] .

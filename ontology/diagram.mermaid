@@ -1,0 +1,62 @@
+erDiagram
+    %% --- Relationships ---
+    SUPPLIER ||--|{ FACILITY : OWNS
+    FACILITY }|--|| LOCATION : LOCATED_IN
+    FACILITY }|--|{ PRODUCT : MANUFACTURES
+    
+    %% CQ D: Collaboration Factors ("Strategic", "Deeply Integrated")
+    SUPPLIER }|--o{ SUPPLIER : PARTNERS_WITH
+    
+    %% CQ E: Certifications (ISO 22301)
+    SUPPLIER }|--|{ CERTIFICATION : HOLDS
+
+    %% Risk Logic
+    RISK-EVENT }o--|{ LOCATION : AFFECTS
+    RISK-EVENT }o--|{ FACILITY : DISRUPTS
+
+    %% --- Nodes & Attributes ---
+    
+    SUPPLIER {
+        string id PK
+        string name
+        string tier_level "CQ A: Tier 1 vs Tier 2"
+        float risk_index "CQ C: Supplier Risk Index"
+        string collaboration_level "CQ D: Strategic/Transactional"
+        boolean shares_data "CQ D: Real-time info sharing"
+    }
+
+    FACILITY {
+        string id PK
+        string name
+        int time_to_recover "CQ B: TTR (days)"
+        int time_to_survive "CQ C: TTS (days)"
+        string digitalization_level "CQ E: AI/Digital Twin usage"
+        boolean adaptability_index "CQ B: Agile reconfiguration?"
+        float inventory_velocity "CQ B: Inventory turns"
+    }
+
+    PRODUCT {
+        string id PK
+        string name
+        float lead_time "CQ A: Order Lead Time"
+        float on_time_delivery_rate "CQ A: <95% rate"
+        boolean is_dual_sourced "CQ C: Dual sourcing"
+    }
+
+    RISK-EVENT {
+        string id PK
+        string type
+        float revenue_impact "CQ E: Fiscal impact"
+        int time_to_awareness "CQ A: Time to Awareness"
+        int time_to_action "CQ A: Time to Action"
+    }
+
+    LOCATION {
+        string country
+        string region
+    }
+
+    CERTIFICATION {
+        string name "CQ E: ISO 22301"
+        date issue_date
+    }
