@@ -56,3 +56,4 @@ notebooks/MD/
 notebooks/MD/plan-fixEmptyMineKgs.prompt.md
 *.md
 .png
+skgb_output/
