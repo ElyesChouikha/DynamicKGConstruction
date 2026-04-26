@@ -1,22 +1,25 @@
 # DynamicKGConstruction
 
-**Working document-to-knowledge-graph construction and Neo4j retrieval**
+**Document-to-knowledge-graph construction and Neo4j retrieval — extended with a Supply Chain Resilience pipeline**
 
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/License-PhD%20Research-orange.svg)](LICENSE)
 
 DynamicKGConstruction is a research codebase centered on `skgb/`.
 
-It currently has two working flows:
+It currently has three working flows:
 
-- Construction: documents -> Docling -> header-aware chunks -> itext2kg ATOM -> JSON/CSV/GraphML/HTML/Neo4j export
-- Retrieval: imported Neo4j graph -> `skgb.retrieval` -> evidence search and grounded answers from notebooks
+- **Construction (itext2kg)**: documents → Docling → header-aware chunks → itext2kg ATOM → JSON/CSV/GraphML/HTML/Neo4j export
+- **Retrieval**: imported Neo4j graph → `skgb.retrieval` → evidence search and grounded answers from notebooks
+- **Supply Chain Resilience Pipeline**: PDFs → Docling → semantic chunks → Claude (Anthropic API) structured extraction → ontology-aligned Neo4j KG
 
 ```text
 Documents
   -> Docling markdown conversion
   -> semantic chunking
-  -> itext2kg ATOM graph construction
+  -> itext2kg ATOM graph construction (original flow)
+     OR
+  -> Claude structured ontology extraction (resilience flow)
   -> kg_output/ exports
   -> Neo4j import
   -> notebook retrieval with skgb.retrieval
@@ -29,6 +32,7 @@ Documents
 - `skgb.retrieval` works against an imported Neo4j graph
 - Default retrieval mode is `entity_graph`, which works directly on the current entity graph export
 - Optional `vector` retrieval is also supported when your Neo4j database already contains chunk embeddings and a vector index
+- Supply chain resilience ontology and SHACL shapes are in `ontology/`
 
 ## Highlights
 
@@ -38,6 +42,7 @@ Documents
 - Construction provider auto-detection from model names: Ollama, Anthropic, and OpenAI LLMs are supported; embeddings can use Ollama or OpenAI
 - Working notebook retrieval API: `build_rag()`, `search_context()`, and `ask_graph()`
 - Docker Compose stack for Neo4j + Jupyter retrieval work
+- Domain-specific supply chain resilience ontology (OWL/RDF + SHACL) with 20 competency questions
 
 ## Repo Usage
 
@@ -51,9 +56,10 @@ Documents
 ### Construction
 
 ```bash
-git clone https://github.com/edwinidrus/DynamicKGConstruction.git
+git clone https://github.com/ElyesChouikha/DynamicKGConstruction.git
 cd DynamicKGConstruction
 python3 -m pip install -r requirements.txt
+pip install langchain-anthropic neo4j pyshacl rdflib
 ```
 
 ### Retrieval Extras
@@ -84,17 +90,34 @@ python3 -m skgb run \
   --recursive
 ```
 
-Notes:
+### Claude + Ollama Embeddings Example (Supply Chain Resilience Pipeline)
 
-- `--recursive` matters only when `--input` is a folder
-- CLI folder traversal is non-recursive unless `--recursive` is passed
-- `run` already generates `kg_output/neo4j_load.cypher`; `export-neo4j` is only needed to regenerate that file later
+```bash
+export ANTHROPIC_API_KEY="your-key-here"
+ollama pull nomic-embed-text
+```
+
+Then configure with Claude as LLM and nomic-embed-text for embeddings:
+
+```python
+from skgb import SKGBConfig
+
+cfg = SKGBConfig.from_out_dir(
+    "skgb_output",
+    llm_model="claude-sonnet-4-6",
+    embeddings_model="nomic-embed-text",
+    api_key=os.environ["ANTHROPIC_API_KEY"],
+    ollama_base_url="http://localhost:11434",
+    temperature=0.0,
+)
+```
+
+See `supply_chain_resilience_pipeline.ipynb` for the full end-to-end notebook.
 
 ### Python API
 
 ```python
 from pathlib import Path
-
 from skgb import SKGBConfig, run_pipeline
 
 cfg = SKGBConfig.from_out_dir(
@@ -149,6 +172,33 @@ runs/demo/
     neo4j_load.cypher
 ```
 
+## Supply Chain Resilience Extension
+
+This fork extends the base pipeline with an ontology-guided extraction layer for supply chain resilience knowledge graph construction, developed as part of a Bachelor thesis at Constructor University Bremen.
+
+### What was added
+
+- `ontology/resilience_ontology.ttl` — OWL/RDF ontology covering 6 classes: Supplier, Facility, Location, Product, RiskEvent, Certification
+- `ontology/resilience_shapes.ttl` — SHACL validation shapes enforcing ontology constraints
+- Claude structured output extraction mapped directly to ontology classes using Pydantic schemas
+- 20 competency questions evaluable via Cypher against the resulting Neo4j graph
+- Evaluation framework: SHACL validation pass rate, P/R/F1 on annotated gold set, CQ answerability
+
+### Domain
+
+- Electronics sector (EMS firms, smartphone OEMs, semiconductor assemblers)
+- Geography: India and Vietnam operations in the context of China+1 diversification
+- Document corpus: annual reports and sustainability reports (2022–2025)
+- Companies: Hon Hai/Foxconn, Samsung, Apple supply chain, Dixon Technologies, Pegatron
+
+### Key results
+
+- 2507 chunks processed across 6 documents, 0 failures
+- 347 suppliers, 818 products, 975 risk events, 214 facilities extracted
+- 84.8% SHACL pass rate
+- 10/20 competency questions answerable via Cypher (50%)
+- Main finding: public annual reports capture qualitative resilience signals (collaboration, digitalization, adaptability) but rarely disclose quantitative metrics (TTR, TTS, lead times)
+
 ## Neo4j Export And Import
 
 The construction pipeline exports `kg_nodes.csv`, `kg_edges.csv`, and `neo4j_load.cypher`.
@@ -199,8 +249,6 @@ RETRIEVAL_STRATEGY=vector
 NEO4J_VECTOR_INDEX=chunkEmbeddings
 OLLAMA_EMBEDDINGS_MODEL=nomic-embed-text
 ```
-
-For Ollama Cloud, set `OLLAMA_HOST=https://ollama.com` and `OLLAMA_API_KEY=...`. The repository `.env.example` already includes that shape.
 
 ### 2. Start Neo4j And Jupyter
 
@@ -277,6 +325,9 @@ skgb/
     factory.py
     query.py
     entity_graph.py
+ontology/
+  resilience_ontology.ttl
+  resilience_shapes.ttl
 ```
 
 ## Known Constraints
@@ -285,12 +336,14 @@ skgb/
 - `construction_report.txt` currently labels LLM and embeddings as `(Ollama)` even when a run used a different provider; trust config or logs for the real provider
 - Chunk overlap is applied after chunks from all documents are flattened, so overlap can cross document boundaries in multi-document runs
 - The default Neo4j export is entity-centric; vector retrieval needs extra graph/index preparation beyond the default export
+- Anthropic embeddings are not supported; always pair Claude with Ollama or OpenAI embeddings
 
 ## Acknowledgments
 
 - [Docling](https://github.com/docling-project/docling) for robust multi-format document parsing
 - [itext2kg](https://github.com/AuvaLab/itext2kg) for the ATOM-based graph construction workflow
 - [Neo4j GraphRAG Python](https://github.com/neo4j/neo4j-graphrag-python) for the retrieval building blocks used by `skgb.retrieval`
+- [Anthropic Claude](https://www.anthropic.com) for structured ontology-guided extraction
 
 ## License
 
