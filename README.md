@@ -121,8 +121,8 @@ Documents selected based on publicly available PDF format and explicit coverage 
 
 ## Cost estimate
 
-- ~$0.007 per chunk via Claude Sonnet (~$18–20 for 2,500 chunks)
-- Gold set evaluation and ablation study: ~$0.05 total
+- \~$0.007 per chunk via Claude Sonnet (\~$18–20 for 2,500 chunks)
+- Gold set evaluation and ablation study: \~$0.05 total
 
 ## Local Neo4j (optional)
 
